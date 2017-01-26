@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.ServiceProcess;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using log4net;
 using log4net.Core;
@@ -16,6 +17,9 @@ namespace Autoexec
 {
     public partial class AutoexecService : ServiceBase
     {
+        private Thread _thread;
+        private bool _shutdownEvent;
+
         public AutoexecService()
         {
             InitializeComponent();
@@ -60,10 +64,15 @@ namespace Autoexec
         {
             try
             {
-
                 //var container = SetupServiceLocator();
                 //Execute
-                ExecuteExecutable(args);
+                ExecuteExecutable(false);
+                _thread = new Thread(WorkerThreadFunc)
+                {
+                    Name = "Running thread",
+                    IsBackground = true
+                };
+                _thread.Start();
             }
             catch (Exception ex)
             {
@@ -75,7 +84,15 @@ namespace Autoexec
             }
         }
 
-        private void ExecuteExecutable(string[] args)
+        private void WorkerThreadFunc()
+        {
+            while (true)
+            {
+                if (_shutdownEvent) return;
+            }
+        }
+
+        private void ExecuteExecutable(bool isStop)
         {
 
             var fullPath = Environment.ExpandEnvironmentVariables(Properties.Settings.Default.ExecutableFullpath);
@@ -86,23 +103,34 @@ namespace Autoexec
                 FileName = fullPath,
                 //WindowStyle = ProcessWindowStyle.Hidden
             };
-
-            if (!string.IsNullOrWhiteSpace(Properties.Settings.Default.ExecutableArguments))
+            if (isStop)
             {
+                if (!string.IsNullOrWhiteSpace(Properties.Settings.Default.ExecutableArgumentsOnStop))
+                {
+                    processStartInfo.Arguments = Properties.Settings.Default.ExecutableArgumentsOnStop;
+                }
+            }
+            else
+            {
+                if (!string.IsNullOrWhiteSpace(Properties.Settings.Default.ExecutableArgumentsOnStart))
+                {
 
-                processStartInfo.Arguments = Properties.Settings.Default.ExecutableArguments;
+                    processStartInfo.Arguments = Properties.Settings.Default.ExecutableArgumentsOnStart;
+                }
             }
 
             try
             {
-                using (var executableProcess = Process.Start(processStartInfo))
-                {
-                    executableProcess?.WaitForExit();
-                }
+                //using (var executableProcess = Process.Start(processStartInfo))
+                //{
+                //    executableProcess?.WaitForExit();
+                //}
+                Process.Start(processStartInfo);
+                LogManager.GetLogger("AutoexecAppender").Logger.Log(typeof(AutoexecService), Level.Info, "Autoexec started properly", null);
             }
             catch (Exception ex)
             {
-                LogManager.GetLogger("AutoexecAppender").Logger.Log(typeof(AutoexecService), Level.Fatal, "Exception happened", ex);// Log error.
+                LogManager.GetLogger("AutoexecAppender").Logger.Log(typeof(AutoexecService), Level.Fatal, "Exception happened", ex);
             }
         }
 
@@ -110,7 +138,20 @@ namespace Autoexec
 
         protected override void OnStop()
         {
-            LogManager.GetLogger("AutoexecAppender").Logger.Log(typeof(AutoexecService), Level.Info, "Autoexec stopped properly", null);
+            try
+            {
+                ExecuteExecutable(true);
+                _shutdownEvent = true;
+                LogManager.GetLogger("AutoexecAppender").Logger.Log(typeof(AutoexecService), Level.Info, "Autoexec stopped properly", null);
+            }
+            catch (Exception ex)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine(ex);
+                Console.ForegroundColor = ConsoleColor.Gray;
+                LogManager.GetLogger("AutoexecAppender").Logger.Log(typeof(AutoexecService), Level.Error, "Coudn't initialize Autoexec", ex);
+                throw;
+            }
         }
     }
 }

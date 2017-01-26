@@ -35,9 +35,18 @@ namespace Autoexec.Properties {
         [global::System.Configuration.ApplicationScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("")]
-        public string ExecutableArguments {
+        public string ExecutableArgumentsOnStart {
             get {
-                return ((string)(this["ExecutableArguments"]));
+                return ((string)(this["ExecutableArgumentsOnStart"]));
+            }
+        }
+        
+        [global::System.Configuration.ApplicationScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string ExecutableArgumentsOnStop {
+            get {
+                return ((string)(this["ExecutableArgumentsOnStop"]));
             }
         }
     }

@@ -5,7 +5,10 @@
     <Setting Name="ExecutableFullpath" Type="System.String" Scope="Application">
       <Value Profile="(Default)">%windir%\system32\notepad.exe</Value>
     </Setting>
-    <Setting Name="ExecutableArguments" Type="System.String" Scope="Application">
+    <Setting Name="ExecutableArgumentsOnStart" Type="System.String" Scope="Application">
+      <Value Profile="(Default)" />
+    </Setting>
+    <Setting Name="ExecutableArgumentsOnStop" Type="System.String" Scope="Application">
       <Value Profile="(Default)" />
     </Setting>
   </Settings>
